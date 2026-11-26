@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yönlendirici</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, Arial, sans-serif; margin: 0; padding: 16px; background: #f5f5f7; color: #1a1a1a; }
+.card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); max-width: 640px; margin: 0 auto; }
+h2 { margin: 0 0 12px; font-size: 20px; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #eee; }
+.logo { width: 48px; height: 48px; border-radius: 10px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; text-align: center; padding: 4px; flex-shrink: 0; }
+.info { flex: 1; min-width: 0; }
+.bank { font-weight: 700; font-size: 14px; }
+.acc { font-size: 12px; color: #666; margin-top: 2px; }
+.iban { font-family: monospace; font-size: 13px; word-break: break-all; margin-top: 4px; }
+.btn { padding: 8px 14px; border: none; border-radius: 8px; background: #007aff; color: #fff; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: #005bb5; }
+.btn.ok { background: #34c759; }
+.msg { padding: 40px; text-align: center; color: #666; }
+.err { color: #c00; }
+</style>
+</head>
+<body>
+<div id="app"><div class="msg">Yükleniyor...</div></div>
+<script>
+(function(){
+  var app = document.getElementById('app');
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id');
+  if(!id){ show('Kart ID parametresi bulunamadı (?id=...)', 'err'); return; }
+
+  var base = window.location.pathname.replace(/\/g\/.*$/, '');
+  fetch(base + '/routes.json?v=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('routes.json yüklenemedi (' + r.status + ')'); return r.json(); })
+    .then(function(data){ route(data); })
+    .catch(function(e){ show('Hata: ' + e.message, 'err'); });
+
+  function show(m, cls){ app.innerHTML = '<div class="msg ' + (cls||'') + '">' + m + '</div>'; }
+
+  function route(data){
+    var card = data[id];
+    if(!card){ show('Bu kart sistemde kayıtlı değil. ID: ' + id, 'err'); return; }
+    var t = card.card_type, d = card.data || {};
+    if(t === 'Çoklu IBAN Kartı'){ showIbans(d); return; }
+    var url = null;
+    if(t === 'Instagram'){ url = d.url || (d.username ? 'https://instagram.com/' + d.username : null); }
+    else if(t === 'WhatsApp'){ url = d.url || (d.phone ? 'https://wa.me/' + d.phone.replace(/\D/g, '') : null); }
+    else { url = d.url; }
+    if(url){ window.location.replace(url); }
+    else { show('Kart verisi eksik veya geçersiz.', 'err'); }
+  }
+
+  function showIbans(d){
+    var title = d.title || 'Banka Hesapları';
+    var accounts = d.accounts || [];
+    var html = '<div class="card"><h2>' + esc(title) + '</h2>';
+    accounts.forEach(function(a){
+      html += '<div class="row">' +
+        '<div class="logo" style="background:' + esc(a.bank_color || '#666') + '">' + esc(a.bank_name || '') + '</div>' +
+        '<div class="info">' +
+          '<div class="bank">' + esc(a.bank_name || '') + '</div>' +
+          (a.account_title ? '<div class="acc">' + esc(a.account_title) + '</div>' : '') +
+          (a.recipient ? '<div class="acc">Alıcı: ' + esc(a.recipient) + ' <button class="btn" data-copy="' + escAttr(a.recipient) + '">Kopyala</button></div>' : '') +
+          '<div class="iban">' + esc(a.iban || '') + '</div>' +
+        '</div>' +
+        '<button class="btn" data-copy="' + escAttr(a.iban) + '">IBAN Kopyala</button>' +
+      '</div>';
+    });
+    html += '</div>';
+    app.innerHTML = html;
+    app.querySelectorAll('button[data-copy]').forEach(function(b){
+      b.addEventListener('click', function(){ copyText(b.getAttribute('data-copy'), b); });
+    });
+  }
+
+  function esc(s){ if(s == null) return ''; return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function escAttr(s){ return String(s || '').replace(/"/g, '&quot;'); }
+  function copyText(t, btn){
+    var done = function(){ var o = btn.textContent; btn.textContent = 'Kopyalandı ✓'; btn.classList.add('ok'); setTimeout(function(){ btn.textContent = o; btn.classList.remove('ok'); }, 1800); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(function(){ fallback(t, done); });
+    } else { fallback(t, done); }
+  }
+  function fallback(t, cb){
+    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+})();
+</script>
+</body>
+</html>

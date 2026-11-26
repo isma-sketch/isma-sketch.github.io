@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFC Kart Vitrini - Önizleme</title>
+<style>
+body { font-family: -apple-system, Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+h1 { color: #1a1a1a; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #007aff; color: #fff; font-size: 11px; }
+.badge.locked { background: #ff3b30; }
+.title { font-size: 18px; font-weight: 700; margin: 8px 0; }
+.row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #eee; }
+.logo { width: 44px; height: 44px; border-radius: 8px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; text-align: center; padding: 4px; box-sizing: border-box; }
+.info { flex: 1; min-width: 0; }
+.bank { font-weight: 600; font-size: 13px; }
+.acc { font-size: 11px; color: #666; }
+.iban { font-family: monospace; font-size: 12px; word-break: break-all; }
+.copy { padding: 5px 10px; border: none; border-radius: 6px; background: #007aff; color: #fff; cursor: pointer; font-size: 11px; }
+.copy:hover { background: #005bb5; }
+.copy.ok { background: #34c759; }
+.empty { text-align: center; color: #888; padding: 40px; }
+.gate { font-size: 11px; color: #888; margin-top: 8px; font-family: monospace; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>NFC Kart Vitrini (Önizleme)</h1>
+<p style="color:#666">routes.json dosyasındaki tüm kayıtlar aşağıda gösterilir. Kopyala butonları IBAN ve Alıcı Adı için çalışır.</p>
+<div id="grid" class="grid"></div>
+<div id="empty" class="empty" style="display:none">Henüz kayıtlı kart yok. Uygulamadan kart ekleyin.</div>
+<script>
+(function(){
+  var grid = document.getElementById('grid');
+  fetch('routes.json?v=' + Date.now()).then(function(r){
+    if(!r.ok) throw new Error('routes.json bulunamadı (' + r.status + ')');
+    return r.json();
+  }).then(function(data){
+    var keys = Object.keys(data);
+    if(keys.length === 0){ document.getElementById('empty').style.display='block'; return; }
+    keys.forEach(function(id){ grid.appendChild(buildCard(id, data[id])); });
+  }).catch(function(e){
+    var em = document.getElementById('empty');
+    em.textContent = 'Hata: ' + e.message + ' — routes.json oluşturulmuş mu?';
+    em.style.display = 'block';
+  });
+
+  function buildCard(id, card){
+    var div = document.createElement('div');
+    div.className = 'card';
+    var title = (card.data && card.data.title) || id;
+    var locked = card.locked ? '<span class="badge locked">KİLİTLİ</span>' : '<span class="badge">KİLİTSİZ</span>';
+    var html = locked + '<div class="title">' + escapeHtml(title) + '</div>' +
+      '<div style="font-size:11px;color:#666">Tür: ' + escapeHtml(card.card_type) + '</div>' +
+      '<div class="gate">' + escapeHtml(location.origin + location.pathname.replace(/onizleme.html$/, '') + 'g/?id=' + id) + '</div>';
+    if(card.card_type === 'Çoklu IBAN Kartı' && card.data && card.data.accounts){
+      card.data.accounts.forEach(function(a){
+        html += '<div class="row">' +
+          '<div class="logo" style="background:' + escapeHtml(a.bank_color || '#666') + '">' + escapeHtml(a.bank_name || '') + '</div>' +
+          '<div class="info">' +
+            '<div class="bank">' + escapeHtml(a.bank_name || '') + '</div>' +
+            (a.account_title ? '<div class="acc">' + escapeHtml(a.account_title) + '</div>' : '') +
+            '<div class="iban">' + escapeHtml(a.iban || '') + '</div>' +
+            (a.recipient ? '<div class="acc">Alıcı: ' + escapeHtml(a.recipient) + ' <button class="copy" data-copy="' + escapeAttr(a.recipient) + '">Kopyala</button></div>' : '') +
+          '</div>' +
+          '<button class="copy" data-copy="' + escapeAttr(a.iban) + '">IBAN Kopyala</button>' +
+        '</div>';
+      });
+    } else {
+      html += '<div style="margin-top:8px;font-size:12px;color:#444">' + escapeHtml(JSON.stringify(card.data)) + '</div>';
+    }
+    div.innerHTML = html;
+    div.querySelectorAll('button.copy').forEach(function(b){
+      b.addEventListener('click', function(){ copyText(b.getAttribute('data-copy'), b); });
+    });
+    return div;
+  }
+
+  function escapeHtml(s){ if(s == null) return ''; return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function escapeAttr(s){ return String(s || '').replace(/"/g, '&quot;'); }
+  function copyText(t, btn){
+    var done = function(){ btn.textContent = 'Kopyalandı ✓'; btn.classList.add('ok'); setTimeout(function(){ btn.textContent = 'Kopyala'; btn.classList.remove('ok'); }, 1600); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(function(){ fallback(t, done); });
+    } else { fallback(t, done); }
+  }
+  function fallback(t, cb){
+    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+})();
+</script>
+</body>
+</html>

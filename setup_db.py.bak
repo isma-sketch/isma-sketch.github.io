@@ -1,0 +1,74 @@
+# -*- coding: utf-8 -*-
+"""Veritabanı kurulum betiği: data/nfc_system.db oluşturur ve routes.json'daki örnek kayıtları yükler."""
+import sqlite3
+import os
+import json
+
+KOK = os.path.dirname(os.path.abspath(__file__))
+DB_YOLU = os.path.join(KOK, "data", "nfc_system.db")
+ROTA_YOLU = os.path.join(KOK, "data", "routes.json")
+
+if os.path.exists(DB_YOLU):
+    os.remove(DB_YOLU)
+
+conn = sqlite3.connect(DB_YOLU)
+c = conn.cursor()
+
+c.execute("""CREATE TABLE cards (
+    id TEXT PRIMARY KEY,
+    uid TEXT UNIQUE,
+    group_id TEXT,
+    type TEXT NOT NULL,
+    title TEXT,
+    customer_name TEXT,
+    target TEXT,
+    created_date TEXT DEFAULT (date('now'))
+)""")
+
+c.execute("""CREATE TABLE ibans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    card_id TEXT NOT NULL,
+    bank TEXT,
+    label TEXT,
+    account_name TEXT,
+    iban TEXT,
+    FOREIGN KEY (card_id) REFERENCES cards(id)
+)""")
+
+c.execute("""CREATE TABLE groups (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    card_ids TEXT DEFAULT '[]'
+)""")
+
+c.execute("""CREATE TABLE banks (
+    name TEXT PRIMARY KEY,
+    color TEXT,
+    short TEXT
+)""")
+
+with open(ROTA_YOLU, "r", encoding="utf-8") as f:
+    rotalar = json.load(f)
+
+for banka, bilgi in rotalar["banks"].items():
+    c.execute("INSERT INTO banks (name, color, short) VALUES (?, ?, ?)",
+              (banka, bilgi["color"], bilgi["short"]))
+
+for kart_id, kart in rotalar["cards"].items():
+    c.execute("INSERT INTO cards (id, group_id, type, title, customer_name, target) VALUES (?, ?, ?, ?, ?, ?)",
+              (kart_id, kart.get("group_id"), kart["type"], kart.get("title"),
+               kart.get("customer_name"), kart.get("target")))
+    for iban in kart.get("ibans", []):
+        c.execute("INSERT INTO ibans (card_id, bank, label, account_name, iban) VALUES (?, ?, ?, ?, ?)",
+                  (kart_id, iban["bank"], iban.get("label"), iban["account_name"], iban["iban"]))
+
+for grup_id, grup in rotalar["groups"].items():
+    c.execute("INSERT INTO groups (id, name, card_ids) VALUES (?, ?, ?)",
+              (grup_id, grup["name"], json.dumps(grup["cards"], ensure_ascii=False)))
+
+conn.commit()
+conn.close()
+print("Veritabanı oluşturuldu:", DB_YOLU)
+print("Kart sayısı:", len(rotalar["cards"]))
+print("Grup sayısı:", len(rotalar["groups"]))
+print("Banka sayısı:", len(rotalar["banks"]))

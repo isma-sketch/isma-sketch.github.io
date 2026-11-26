@@ -1,156 +1,266 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import threading, winsound, os, webbrowser
+import threading, winsound, os, webbrowser, json
 from database import (init_db, get_setting, set_setting, find_by_uid,
-                      insert_card, get_next_card_id, get_all_cards)
+                      insert_card, get_next_card_id, get_all_cards,
+                      update_card_data, update_group_data, delete_card)
 from routes_generator import generate_routes
 from nfc_writer import NFCWriter, CHIP_SIZES
 
-CARD_TYPES = ['Çoklu IBAN Kartı', 'Dijital Menü', 'Google Yorum',
-              'Instagram', 'WhatsApp', 'Sahibinden Mağaza', 'Özel Bağlantı']
-BANKS = ['Akbank', 'Garanti BBVA', 'Ziraat Bankası', 'İş Bankası',
-         'Yapı Kredi', 'QNB', 'VakıfBank', 'Halkbank', 'Enpara',
-         'Kuveyt Türk', 'Diğer']
-BANK_COLORS = {'Akbank': '#E30613', 'Garanti BBVA': '#009B4E',
-               'Ziraat Bankası': '#E30613', 'İş Bankası': '#004B93',
-               'Yapı Kredi': '#002B5C', 'QNB': '#5D2E8C',
-               'VakıfBank': '#FEC50C', 'Halkbank': '#004A99',
-               'Enpara': '#00A0E3', 'Kuveyt Türk': '#00A651',
-               'Diğer': '#666666'}
+CARD_TYPES = ['Çoklu IBAN Kartı', 'Dijital Menü', 'Google Yorum', 'Instagram', 'WhatsApp', 'Sahibinden Mağaza', 'Özel Bağlantı']
+BANKS = ['Akbank', 'Garanti BBVA', 'Ziraat Bankası', 'İş Bankası', 'Yapı Kredi', 'QNB', 'VakıfBank', 'Halkbank', 'Enpara', 'Kuveyt Türk', 'Diğer']
+BANK_COLORS = {'Akbank': '#E30613', 'Garanti BBVA': '#009B4E', 'Ziraat Bankası': '#E30613', 'İş Bankası': '#004B93', 'Yapı Kredi': '#002B5C', 'QNB': '#5D2E8C', 'VakıfBank': '#FEC50C', 'Halkbank': '#004A99', 'Enpara': '#00A0E3', 'Kuveyt Türk': '#00A651', 'Diğer': '#666666'}
 READER_MODES = ['Simülasyon / Test Modu', 'PN532 (UART/HSU)', 'ACS ACR122U (PC/SC)']
-
 
 def _now():
     from datetime import datetime
-    d = datetime.now()
-    return '{:02d}:{:02d}:{:02d}'.format(d.hour, d.minute, d.second)
-
+    return datetime.now().strftime("%H:%M:%S")
 
 class NFCApp:
     def __init__(self, root):
         self.root = root
-        self.root.title('NFC Kart Sabit Kapı ve Yönlendirme Yönetim Sistemi')
-        self.root.geometry('1220x820')
+        self.root.title('NFC Yönetim Paneli v2.0')
+        self.root.geometry('1100x750')
         self.writer = NFCWriter(mode='simulation')
+        
+        # Yazma Modu Değişkenleri
         self.iban_rows = []
         self.single_fields = {}
-        self.total_count = tk.IntVar(value=10)
+        self.total_count = tk.IntVar(value=5)
         self.current_index = tk.IntVar(value=0)
         self.group_id_var = tk.StringVar()
         self.last_uid = None
+        self.card_owner_var = tk.StringVar()
 
         init_db()
-        if not get_setting('gate_url'):
-            set_setting('gate_url', 'https://isma-sketch.github.io/g/?id=')
-        if not get_setting('reader_mode'):
-            set_setting('reader_mode', 'Simülasyon / Test Modu')
-        if not get_setting('chip_type'):
-            set_setting('chip_type', 'Otomatik Algıla (Önerilen)')
-        if not get_setting('lock_card'):
-            set_setting('lock_card', '0')
-
+        self.setup_defaults()
         self.build_ui()
-        self.log('Sistem hazır. Okuyucu modu: Simülasyon / Test Modu')
-        self.log('Sabit kapı URL: ' + get_setting('gate_url'))
+        self.refresh_card_list()
+
+    def setup_defaults(self):
+        if not get_setting('gate_url'): set_setting('gate_url', 'https://isma-sketch.github.io/g/?id=')
+        if not get_setting('reader_mode'): set_setting('reader_mode', 'Simülasyon / Test Modu')
+        if not get_setting('chip_type'): set_setting('chip_type', 'Otomatik Algıla (Önerilen)')
+        if not get_setting('lock_card'): set_setting('lock_card', '0')
 
     def build_ui(self):
-        top = ttk.Frame(self.root, padding=8)
-        top.pack(fill='x')
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        self.tab_write = ttk.Frame(self.notebook, padding=10)
+        self.tab_manage = ttk.Frame(self.notebook, padding=10)
+        
+        self.notebook.add(self.tab_write, text=' Kart Yazma & Gruplama ')
+        self.notebook.add(self.tab_manage, text=' Kayıt Yönetimi & Düzenleme ')
+        
+        self.build_write_tab()
+        self.build_manage_tab()
 
+    def build_write_tab(self):
+        # Üst Ayarlar
+        top = ttk.LabelFrame(self.tab_write, text="Sistem Ayarları", padding=10)
+        top.pack(fill='x', pady=5)
+        
         ttk.Label(top, text='Sabit Kapı URL:').grid(row=0, column=0, sticky='w')
-        self.gate_entry = ttk.Entry(top, width=60)
+        self.gate_entry = ttk.Entry(top, width=50)
         self.gate_entry.insert(0, get_setting('gate_url'))
-        self.gate_entry.grid(row=0, column=1, sticky='we', padx=4)
-        ttk.Button(top, text='Kaydet', command=self.save_gate).grid(row=0, column=2, padx=2)
-        ttk.Button(top, text='Önizleme', command=self.open_preview).grid(row=0, column=3, padx=2)
-
-        ttk.Label(top, text='Okuyucu:').grid(row=1, column=0, sticky='w', pady=4)
+        self.gate_entry.grid(row=0, column=1, padx=5)
+        ttk.Button(top, text='Kaydet', command=self.save_gate).grid(row=0, column=2, padx=5)
+        
+        ttk.Label(top, text='Okuyucu:').grid(row=1, column=0, sticky='w', pady=5)
         self.reader_var = tk.StringVar(value=get_setting('reader_mode'))
-        ttk.Combobox(top, textvariable=self.reader_var, values=READER_MODES,
-                     width=30, state='readonly').grid(row=1, column=1, sticky='w', padx=4)
-        ttk.Button(top, text='Bağlan', command=self.connect_reader).grid(row=1, column=2, padx=2)
+        ttk.Combobox(top, textvariable=self.reader_var, values=READER_MODES, width=25, state='readonly').grid(row=1, column=1, sticky='w', padx=5)
+        ttk.Button(top, text='Bağlan', command=self.connect_reader).grid(row=1, column=2, sticky='w', padx=5)
 
-        ttk.Label(top, text='Çip Türü:').grid(row=2, column=0, sticky='w')
+        ttk.Label(top, text='Çip:').grid(row=2, column=0, sticky='w')
         self.chip_var = tk.StringVar(value=get_setting('chip_type'))
-        ttk.Combobox(top, textvariable=self.chip_var, values=list(CHIP_SIZES.keys()),
-                     width=45, state='readonly').grid(row=2, column=1, sticky='w', padx=4)
-
-        ttk.Label(top, text='Kart Türü:').grid(row=3, column=0, sticky='w', pady=4)
+        ttk.Combobox(top, textvariable=self.chip_var, values=list(CHIP_SIZES.keys()), width=30, state='readonly').grid(row=2, column=1, sticky='w', padx=5)
+        
+        # Orta Form ve Log
+        mid = ttk.PanedWindow(self.tab_write, orient='horizontal')
+        mid.pack(fill='both', expand=True, pady=5)
+        
+        form_frame = ttk.LabelFrame(mid, text="Kart İçeriği", padding=10)
+        mid.add(form_frame, weight=3)
+        
+        # Kart Tipi ve Grup Modu
+        tf = ttk.Frame(form_frame)
+        tf.pack(fill='x', pady=5)
+        ttk.Label(tf, text='Kart Türü:').pack(side='left')
         self.type_var = tk.StringVar(value=CARD_TYPES[0])
-        type_combo = ttk.Combobox(top, textvariable=self.type_var, values=CARD_TYPES,
-                                  width=30, state='readonly')
-        type_combo.grid(row=3, column=1, sticky='w', padx=4)
-        type_combo.bind('<<ComboboxSelected>>', lambda e: self.on_type_change())
-
+        cb = ttk.Combobox(tf, textvariable=self.type_var, values=CARD_TYPES, width=25, state='readonly')
+        cb.pack(side='left', padx=5)
+        cb.bind('<<ComboboxSelected>>', lambda e: self.on_type_change())
+        
         self.lock_var = tk.BooleanVar(value=get_setting('lock_card') == '1')
-        ttk.Checkbutton(top, text='Kalıcı Kilit Vur (salt-okunur)',
-                        variable=self.lock_var).grid(row=3, column=2, columnspan=2, sticky='w')
-
-        ttk.Label(top, text='Grup ID:').grid(row=4, column=0, sticky='w')
-        ttk.Entry(top, textvariable=self.group_id_var, width=20).grid(row=4, column=1, sticky='w', padx=4)
-
-        ttk.Label(top, text='Toplam Kart (Grup):').grid(row=4, column=2, sticky='e')
-        ttk.Spinbox(top, from_=1, to=1000, textvariable=self.total_count, width=8).grid(row=4, column=3, sticky='w')
-
+        ttk.Checkbutton(tf, text='Kalıcı Kilit Vur', variable=self.lock_var).pack(side='left', padx=15)
+        
+        gf = ttk.Frame(form_frame)
+        gf.pack(fill='x', pady=5)
         self.mode_var = tk.StringVar(value='tekil')
-        mode_frame = ttk.Frame(top)
-        mode_frame.grid(row=5, column=0, columnspan=4, sticky='w', pady=4)
-        ttk.Radiobutton(mode_frame, text='Tekil Mod', variable=self.mode_var,
-                        value='tekil').pack(side='left', padx=4)
-        ttk.Radiobutton(mode_frame, text='Gruplu Mod', variable=self.mode_var,
-                        value='gruplu').pack(side='left', padx=4)
-        ttk.Label(mode_frame, text='Sayaç:').pack(side='left', padx=(20, 4))
-        self.counter_label = ttk.Label(mode_frame, text='0 / 0')
-        self.counter_label.pack(side='left')
+        ttk.Radiobutton(gf, text='Tekil', variable=self.mode_var, value='tekil').pack(side='left')
+        ttk.Radiobutton(gf, text='Gruplu', variable=self.mode_var, value='gruplu').pack(side='left', padx=10)
+        ttk.Label(gf, text='Grup ID:').pack(side='left', padx=5)
+        ttk.Entry(gf, textvariable=self.group_id_var, width=15).pack(side='left')
+        ttk.Label(gf, text='Toplam:').pack(side='left', padx=5)
+        ttk.Spinbox(gf, from_=1, to=100, textvariable=self.total_count, width=5).pack(side='left')
+        self.counter_label = ttk.Label(gf, text='0 / 0', foreground='blue')
+        self.counter_label.pack(side='left', padx=10)
 
-        mid = ttk.PanedWindow(self.root, orient='horizontal')
-        mid.pack(fill='both', expand=True, padx=8, pady=4)
-
-        left = ttk.Frame(mid, padding=6)
-        mid.add(left, weight=3)
-        self.dynamic_frame = ttk.LabelFrame(left, text='Kart İçeriği', padding=6)
-        self.dynamic_frame.pack(fill='both', expand=True)
+        self.dynamic_frame = ttk.Frame(form_frame)
+        self.dynamic_frame.pack(fill='both', expand=True, pady=10)
         self.iban_container = ttk.Frame(self.dynamic_frame)
         self.iban_container.pack(fill='both', expand=True)
-
-        right = ttk.Frame(mid, padding=6)
-        mid.add(right, weight=2)
-        ttk.Label(right, text='Durum Günlüğü').pack(anchor='w')
-        self.log_text = tk.Text(right, height=20, state='disabled', wrap='word')
-        self.log_text.pack(fill='both', expand=True, pady=4)
-
-        bottom = ttk.Frame(self.root, padding=8)
-        bottom.pack(fill='x')
-        ttk.Button(bottom, text='Kartı Yaz / Doğrula / Kilitle / Kaydet',
-                   command=self.process_card).pack(side='left', padx=4)
-        ttk.Button(bottom, text='routes.json Yenile',
-                   command=self.refresh_routes).pack(side='left', padx=4)
-
+        
+        log_frame = ttk.LabelFrame(mid, text="İşlem Günlüğü", padding=5)
+        mid.add(log_frame, weight=2)
+        self.log_text = tk.Text(log_frame, state='disabled', wrap='word', bg='#f4f4f4')
+        self.log_text.pack(fill='both', expand=True)
+        
+        # Alt Butonlar
+        bottom = ttk.Frame(self.tab_write)
+        bottom.pack(fill='x', pady=5)
+        ttk.Button(bottom, text='YAZDIR -> DOĞRULA -> KİLİTLE -> KAYDET', command=self.process_card).pack(side='left', padx=5)
+        ttk.Button(bottom, text='JSON Güncelle', command=self.refresh_routes).pack(side='left', padx=5)
+        ttk.Button(bottom, text='Müşteri Panelini Aç', command=lambda: webbrowser.open('file:///' + os.path.abspath('musteri.html').replace('\\', '/'))).pack(side='left', padx=5)
+        
         self.on_type_change()
 
+    def build_manage_tab(self):
+        top = ttk.Frame(self.tab_manage)
+        top.pack(fill='x', pady=5)
+        ttk.Label(top, text='Ara (ID, UID, Tür):').pack(side='left')
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add('write', lambda *args: self.refresh_card_list())
+        ttk.Entry(top, textvariable=self.search_var, width=30).pack(side='left', padx=5)
+        ttk.Button(top, text='Listeyi Yenile', command=self.refresh_card_list).pack(side='left', padx=5)
+        
+        # Tablo
+        cols = ('ID', 'Tür', 'Grup', 'UID', 'Kilitli')
+        self.tree = ttk.Treeview(self.tab_manage, columns=cols, show='headings', height=15)
+        for col in cols:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=100)
+        self.tree.pack(fill='both', expand=True, pady=5)
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+        
+        # Düzenleme Alanı
+        edit_frame = ttk.LabelFrame(self.tab_manage, text="Seçili Kartı Düzenle", padding=10)
+        edit_frame.pack(fill='x', pady=5)
+        
+        ttk.Label(edit_frame, text='Başlık:').grid(row=0, column=0, sticky='w')
+        self.edit_title_var = tk.StringVar()
+        ttk.Entry(edit_frame, textvariable=self.edit_title_var, width=30).grid(row=0, column=1, padx=5)
+        
+        ttk.Label(edit_frame, text='Hedef Link / Metin (JSON formatında):').grid(row=1, column=0, sticky='w', pady=5)
+        self.edit_json_text = tk.Text(edit_frame, height=5, width=60)
+        self.edit_json_text.grid(row=1, column=1, padx=5, pady=5)
+        
+        btn_frame = ttk.Frame(edit_frame)
+        btn_frame.grid(row=2, column=0, columnspan=2, pady=5)
+        ttk.Button(btn_frame, text='Bu Kartı Güncelle', command=self.update_selected_card).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text='Bu GRUBU Güncelle', command=self.update_selected_group).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text='Kartı SİL', command=self.delete_selected_card).pack(side='left', padx=5)
+
+    def log(self, m):
+        self.log_text.configure(state='normal')
+        self.log_text.insert('end', f'[{_now()}] {m}\n')
+        self.log_text.see('end')
+        self.log_text.configure(state='disabled')
+
+    def refresh_card_list(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        query = self.search_var.get().lower()
+        for row in get_all_cards():
+            c_id, c_type, g_id, data, locked, created, uid = row
+            if query in str(c_id).lower() or query in str(uid).lower() or query in str(c_type).lower():
+                lock_str = "Evet" if locked else "Hayır"
+                self.tree.insert('', 'end', values=(c_id, c_type, g_id, uid, lock_str))
+
+    def on_tree_select(self, event):
+        sel = self.tree.selection()
+        if not sel: return
+        item = self.tree.item(sel[0])
+        c_id = item['values'][0]
+        
+        with sqlite3.connect('data/nfc_system.db') as conn:
+            row = conn.execute('SELECT data FROM cards WHERE card_id=?', (c_id,)).fetchone()
+            if row:
+                data = json.loads(row[0])
+                self.edit_title_var.set(data.get('title', ''))
+                self.edit_json_text.delete('1.0', 'end')
+                self.edit_json_text.insert('1.0', json.dumps(data, ensure_ascii=False, indent=2))
+
+    def update_selected_card(self):
+        sel = self.tree.selection()
+        if not sel: return messagebox.showwarning("Uyarı", "Lütfen listeden bir kart seçin.")
+        c_id = self.tree.item(sel[0])['values'][0]
+        try:
+            new_data = json.loads(self.edit_json_text.get('1.0', 'end').strip())
+            if 'title' in new_data: new_data['title'] = self.edit_title_var.get()
+            update_card_data(c_id, new_data)
+            self.refresh_routes()
+            self.refresh_card_list()
+            self.log(f"Kart güncellendi: {c_id}")
+            messagebox.showinfo("Başarılı", "Kart başarıyla güncellendi.")
+        except Exception as e:
+            messagebox.showerror("Hata", f"Geçersiz JSON veya hata: {e}")
+
+    def update_selected_group(self):
+        sel = self.tree.selection()
+        if not sel: return messagebox.showwarning("Uyarı", "Lütfen gruptaki herhangi bir kartı seçin.")
+        item = self.tree.item(sel[0])
+        c_id = item['values'][0]
+        g_id = item['values'][2]
+        if not g_id:
+            return messagebox.showwarning("Uyarı", "Seçili kartın bir Grubu yok. Önce gruba dahil edin.")
+            
+        ans = messagebox.askyesno("Grup Güncelleme", f"'{g_id}' grubuna bağlı TÜM kartlar güncellenecek. Onaylıyor musunuz?")
+        if not ans: return
+        
+        try:
+            new_data = json.loads(self.edit_json_text.get('1.0', 'end').strip())
+            if 'title' in new_data: new_data['title'] = self.edit_title_var.get()
+            count = update_group_data(g_id, new_data)
+            self.refresh_routes()
+            self.refresh_card_list()
+            self.log(f"Grup güncellendi: {g_id} ({count} kart etkilendi)")
+            messagebox.showinfo("Başarılı", f"{count} kart güncellendi.")
+        except Exception as e:
+            messagebox.showerror("Hata", f"Geçersiz JSON veya hata: {e}")
+
+    def delete_selected_card(self):
+        sel = self.tree.selection()
+        if not sel: return
+        c_id = self.tree.item(sel[0])['values'][0]
+        if messagebox.askyesno("Sil", f"{c_id} kartını silmek istediğinize emin misiniz?"):
+            delete_card(c_id)
+            self.refresh_routes()
+            self.refresh_card_list()
+            self.log(f"Kart silindi: {c_id}")
+
+    # --- Yazma Sekmesi Fonksiyonları (Aynı kaldı, sadece gruplama eklendi) ---
     def on_type_change(self):
         for w in self.dynamic_frame.winfo_children():
-            if w is not self.iban_container:
-                w.destroy()
-        for w in self.iban_container.winfo_children():
-            w.destroy()
+            if w is not self.iban_container: w.destroy()
+        for w in self.iban_container.winfo_children(): w.destroy()
         self.iban_rows = []
         self.single_fields = {}
         t = self.type_var.get()
-        if t == 'Çoklu IBAN Kartı':
-            self.build_iban_form()
-        else:
-            self.build_single_form(t)
+        if t == 'Çoklu IBAN Kartı': self.build_iban_form()
+        else: self.build_single_form(t)
 
     def build_iban_form(self):
         ttk.Label(self.iban_container, text='Kart Başlığı:').grid(row=0, column=0, sticky='w')
         self.card_title = tk.StringVar(value='Banka Hesaplarım')
-        ttk.Entry(self.iban_container, textvariable=self.card_title,
-                  width=40).grid(row=0, column=1, columnspan=4, sticky='we', pady=2)
-        ttk.Button(self.iban_container, text='+ Hesap Ekle',
-                   command=self.add_iban_row).grid(row=1, column=0, pady=4)
+        ttk.Entry(self.iban_container, textvariable=self.card_title, width=25).grid(row=0, column=1, sticky='we', pady=2)
+        ttk.Label(self.iban_container, text='Kart Sahibi:').grid(row=0, column=2, sticky='w', padx=5)
+        ttk.Entry(self.iban_container, textvariable=self.card_owner_var, width=20).grid(row=0, column=3, sticky='we', pady=2)
+        ttk.Button(self.iban_container, text='+ Hesap Ekle', command=self.add_iban_row).grid(row=1, column=0, pady=4)
         self.iban_list_frame = ttk.Frame(self.iban_container)
-        self.iban_list_frame.grid(row=2, column=0, columnspan=5, sticky='nsew')
+        self.iban_list_frame.grid(row=2, column=0, columnspan=4, sticky='nsew')
+        self.add_iban_row()
 
     def add_iban_row(self):
         row_frame = ttk.Frame(self.iban_list_frame)
@@ -159,17 +269,11 @@ class NFCApp:
         title_var = tk.StringVar()
         name_var = tk.StringVar()
         iban_var = tk.StringVar()
-        ttk.Label(row_frame, text='Banka:').pack(side='left')
-        ttk.Combobox(row_frame, textvariable=bank_var, values=BANKS, width=13,
-                     state='readonly').pack(side='left', padx=2)
-        ttk.Label(row_frame, text='Hesap:').pack(side='left')
-        ttk.Entry(row_frame, textvariable=title_var, width=12).pack(side='left', padx=2)
-        ttk.Label(row_frame, text='Alıcı:').pack(side='left')
-        ttk.Entry(row_frame, textvariable=name_var, width=14).pack(side='left', padx=2)
-        ttk.Label(row_frame, text='IBAN:').pack(side='left')
-        ttk.Entry(row_frame, textvariable=iban_var, width=24).pack(side='left', padx=2)
-        data = {'frame': row_frame, 'bank': bank_var, 'title': title_var,
-                'name': name_var, 'iban': iban_var}
+        ttk.Combobox(row_frame, textvariable=bank_var, values=BANKS, width=12, state='readonly').pack(side='left', padx=2)
+        ttk.Entry(row_frame, textvariable=title_var, width=10).pack(side='left', padx=2)
+        ttk.Entry(row_frame, textvariable=name_var, width=15).pack(side='left', padx=2)
+        ttk.Entry(row_frame, textvariable=iban_var, width=26).pack(side='left', padx=2)
+        data = {'frame': row_frame, 'bank': bank_var, 'title': title_var, 'name': name_var, 'iban': iban_var}
         def remove():
             row_frame.destroy()
             self.iban_rows.remove(data)
@@ -177,27 +281,101 @@ class NFCApp:
         self.iban_rows.append(data)
 
     def build_single_form(self, t):
-        if t == 'Dijital Menü':
-            self._field('Başlık:', 'title'); self._field('Menü URL:', 'url', 50)
-        elif t == 'Google Yorum':
-            self._field('İşletme Adı:', 'title'); self._field('Google Yorum URL:', 'url', 50)
-        elif t == 'Instagram':
-            self._field('Kullanıcı Adı:', 'username'); self._field('Instagram URL:', 'url', 50)
-        elif t == 'WhatsApp':
-            self._field('İsim:', 'title'); self._field('Telefon (905xx...):', 'phone')
-            self._field('WhatsApp URL:', 'url', 50)
-        elif t == 'Sahibinden Mağaza':
-            self._field('Mağaza Adı:', 'title'); self._field('Mağaza URL:', 'url', 50)
-        elif t == 'Özel Bağlantı':
-            self._field('Başlık:', 'title'); self._field('Hedef URL:', 'url', 50)
+        if t == 'Dijital Menü': self._field('Başlık:', 'title'); self._field('Menü URL:', 'url', 50)
+        elif t == 'Google Yorum': self._field('İşletme Adı:', 'title'); self._field('Yorum URL:', 'url', 50)
+        elif t == 'Instagram': self._field('Kullanıcı Adı:', 'username'); self._field('Instagram URL:', 'url', 50)
+        elif t == 'WhatsApp': self._field('İsim:', 'title'); self._field('Telefon:', 'phone'); self._field('WhatsApp URL:', 'url', 50)
+        elif t == 'Sahibinden Mağaza': self._field('Mağaza Adı:', 'title'); self._field('Mağaza URL:', 'url', 50)
+        elif t == 'Özel Bağlantı': self._field('Başlık:', 'title'); self._field('Hedef URL:', 'url', 50)
 
     def _field(self, label, key, width=40):
         row = ttk.Frame(self.dynamic_frame)
         row.pack(fill='x', pady=3)
-        ttk.Label(row, text=label, width=18).pack(side='left')
+        ttk.Label(row, text=label, width=15).pack(side='left')
         var = tk.StringVar()
         ttk.Entry(row, textvariable=var, width=width).pack(side='left', fill='x', expand=True)
         self.single_fields[key] = var
+
+    def collect_data(self):
+        t = self.type_var.get()
+        if t == 'Çoklu IBAN Kartı':
+            accs = []
+            for r in self.iban_rows:
+                iban = r['iban'].get().strip()
+                if not iban: continue
+                bank = r['bank'].get()
+                accs.append({'bank_name': bank, 'bank_color': BANK_COLORS.get(bank, '#666666'), 'account_title': r['title'].get().strip(), 'recipient': r['name'].get().strip(), 'iban': iban})
+            if not accs: return None, 'En az bir IBAN girin.'
+            return {'title': self.card_title.get().strip() or 'Banka Hesaplarım', 'owner': self.card_owner_var.get().strip(), 'accounts': accs}, None
+        data = {}
+        for k, v in self.single_fields.items():
+            val = v.get().strip()
+            if not val: return None, 'Tüm alanlar doldurulmalıdır.'
+            data[k] = val
+        return data, None
+
+    def process_card(self):
+        threading.Thread(target=self._process_card_thread, daemon=True).start()
+
+    def _process_card_thread(self):
+        data, err = self.collect_data()
+        if err: return self.log(f'HATA: {err}')
+        
+        gate = get_setting('gate_url')
+        group_id = self.group_id_var.get().strip()
+        is_group = self.mode_var.get() == 'gruplu'
+        
+        if is_group and not group_id:
+            return self.log('HATA: Gruplu mod için Grup ID girin.')
+
+        if not is_group:
+            card_id = 'K' + _now().replace(':', '') + str(len(get_all_cards()) + 1).zfill(3)
+            idx, total = 1, 1
+        else:
+            card_id = get_next_card_id(group_id)
+            idx, total = self.current_index.get() + 1, self.total_count.get()
+            if idx > total: return self.log('Grup doldu. Yeni Grup ID girin.')
+
+        self.log('Kart okutun...')
+        uid = self.writer.wait_for_card(timeout=30)
+        if not uid: return self.log('UID okunamadı.')
+        self.log(f'UID: {uid}')
+
+        if find_by_uid(uid):
+            ans = messagebox.askyesno('Kayıtlı Kart', 'Bu UID zaten kayıtlı! Üzerine yazılsın mı?')
+            if not ans: return self.log('İptal edildi.')
+
+        target_url = gate + card_id
+        self.log(f'Yazılıyor: {target_url}')
+        ok, msg = self.writer.write_ndef_url(target_url, self.chip_var.get())
+        self.log(msg)
+        if not ok: return
+
+        ok, read_back = self.writer.read_ndef_url()
+        if not ok or read_back != target_url:
+            return self.log('HATA: Doğrulama başarısız! KİLİTLENMEDİ.')
+        self.log('Doğrulama başarılı.')
+
+        if self.lock_var.get():
+            ok, msg = self.writer.lock_card()
+            self.log(msg)
+            if not ok: self.log('UYARI: Kilit desteklenmiyor, atlandı.')
+
+        try:
+            insert_card(card_id, uid, self.type_var.get(), group_id if is_group else None, data, self.lock_var.get())
+            self.refresh_routes()
+            winsound.Beep(1200, 150)
+            self.log(f'BAŞARILI: {card_id} kaydedildi.')
+            
+            if not is_group:
+                self.on_type_change()
+                self.log('Form sıfırlandı.')
+            else:
+                self.current_index.set(idx)
+                self.root.after(0, lambda: self.counter_label.config(text=f"{idx} / {total}"))
+                self.log(f'Sayaç: {idx}/{total}. Sıradaki kartı okutun.')
+        except Exception as e:
+            self.log(f'DB HATA: {e}')
 
     def save_gate(self):
         set_setting('gate_url', self.gate_entry.get().strip())
@@ -210,158 +388,21 @@ class NFCApp:
         mode = self.reader_var.get()
         if mode == 'Simülasyon / Test Modu':
             self.writer.set_mode('simulation')
-            self.log('Simülasyon modu aktif.')
-            return
-        if mode == 'PN532 (UART/HSU)':
-            port = simpledialog.askstring('COM Port', 'COM port girin (ör. COM3):')
-            if port:
-                ok, msg = self.writer.connect_pn532(port)
-                self.log(msg)
-            return
-        if mode == 'ACS ACR122U (PC/SC)':
-            ok, msg = self.writer.connect_acr122u()
-            self.log(msg)
-            return
-
-    def log(self, m):
-        self.log_text.configure(state='normal')
-        self.log_text.insert('end', '[' + _now() + '] ' + m + '\n')
-        self.log_text.see('end')
-        self.log_text.configure(state='disabled')
-
-    def collect_data(self):
-        t = self.type_var.get()
-        if t == 'Çoklu IBAN Kartı':
-            accs = []
-            for r in self.iban_rows:
-                iban = r['iban'].get().strip()
-                if not iban:
-                    continue
-                bank = r['bank'].get()
-                accs.append({'bank_name': bank,
-                             'bank_color': BANK_COLORS.get(bank, '#666666'),
-                             'account_title': r['title'].get().strip(),
-                             'recipient': r['name'].get().strip(),
-                             'iban': iban})
-            if not accs:
-                return None, 'En az bir IBAN ekleyin'
-            return {'title': self.card_title.get().strip() or 'Banka Hesaplarım',
-                    'accounts': accs}, None
-        data = {}
-        for k, v in self.single_fields.items():
-            val = v.get().strip()
-            if not val:
-                return None, 'Alan boş: ' + k
-            data[k] = val
-        return data, None
+            self.log('Simülasyon aktif.')
+        elif mode == 'PN532 (UART/HSU)':
+            port = simpledialog.askstring('COM Port', 'Port (ör. COM3):')
+            if port: self.log(self.writer.connect_pn532(port)[1])
+        elif mode == 'ACS ACR122U (PC/SC)':
+            self.log(self.writer.connect_acr122u()[1])
 
     def refresh_routes(self):
         try:
-            path = generate_routes()
-            self.log('routes.json güncellendi: ' + path)
+            generate_routes('routes.json')
+            self.log('routes.json güncellendi.')
         except Exception as e:
-            self.log('Hata: ' + str(e))
+            self.log(f'JSON HATA: {e}')
 
-    def process_card(self):
-        threading.Thread(target=self._process_card_thread, daemon=True).start()
-
-    def _ask_yesno(self, title, msg):
-        result = {'ans': False}
-        evt = threading.Event()
-        def prompt():
-            result['ans'] = messagebox.askyesno(title, msg)
-            evt.set()
-        self.root.after(0, prompt)
-        evt.wait()
-        return result['ans']
-
-    def _process_card_thread(self):
-        try:
-            data, err = self.collect_data()
-            if err:
-                self.log('HATA: ' + err); return
-
-            gate = get_setting('gate_url')
-            group_id = self.group_id_var.get().strip()
-            if not group_id:
-                group_id = 'G' + _now().replace(':', '')
-
-            if self.mode_var.get() == 'tekil':
-                card_id = 'K' + _now().replace(':', '') + str(len(get_all_cards()) + 1).zfill(3)
-                total = 1; idx = 1
-            else:
-                card_id = get_next_card_id(group_id)
-                total = self.total_count.get()
-                idx = self.current_index.get() + 1
-                if idx > total:
-                    self.log('Bu grup için toplam karta ulaşıldı. Yeni grup ID girin.')
-                    return
-
-            self.log('Kart okutun (UID bekleniyor)...')
-            uid = self.writer.wait_for_card(timeout=30)
-            if not uid:
-                self.log('UID okunamadı.'); return
-            self.last_uid = uid
-            self.log('UID: ' + uid)
-
-            existing = find_by_uid(uid)
-            if existing:
-                ans = self._ask_yesno('Kayıtlı Kart',
-                                      'Bu kart (UID) zaten kayıtlı! Üzerine yazılsın mı?')
-                if not ans:
-                    self.log('Kullanıcı iptal etti.'); return
-
-            target_url = gate + card_id
-            self.log('Yazılıyor: ' + target_url)
-            ok, msg = self.writer.write_ndef_url(target_url, self.chip_var.get())
-            self.log(msg)
-            if not ok:
-                return
-
-            ok, read_back = self.writer.read_ndef_url()
-            if not ok or read_back != target_url:
-                self.log('DOĞRULAMA BAŞARISIZ! Kilitleme yapılmadı.')
-                return
-            self.log('Doğrulama başarılı.')
-
-            if self.lock_var.get():
-                ok, msg = self.writer.lock_card()
-                self.log(msg)
-                if not ok:
-                    self.log('UYARI: Kilit uygulanamadı, kayıt devam ediyor.')
-
-            insert_card(card_id, uid, self.type_var.get(), group_id, data, self.lock_var.get())
-            self.refresh_routes()
-            try:
-                winsound.Beep(1200, 150)
-            except Exception:
-                pass
-            self.log('BAŞARILI: Kart kaydedildi (' + card_id + ').')
-
-            if self.mode_var.get() == 'tekil':
-                self.root.after(0, self.on_type_change)
-                self.log('Form sıfırlandı. Yeni kart girişine hazır.')
-            else:
-                self.current_index.set(idx)
-                self.root.after(0, lambda: self.counter_label.config(
-                    text=str(idx) + ' / ' + str(total)))
-                self.log('Sayaç: ' + str(idx) + ' / ' + str(total) + '. Sıradaki kartı okutun.')
-        except Exception as e:
-            self.log('HATA: ' + str(e))
-
-    def open_preview(self):
-        p = os.path.abspath('onizleme.html')
-        if os.path.exists(p):
-            webbrowser.open('file:///' + p.replace('\\', '/'))
-        else:
-            self.log('onizleme.html bulunamadı.')
-
-
-def main():
+if __name__ == '__main__':
     root = tk.Tk()
     NFCApp(root)
     root.mainloop()
-
-
-if __name__ == '__main__':
-    main()

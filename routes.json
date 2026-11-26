@@ -1,13 +1,149 @@
 {
-  "DEMO-SAHIB": {
-    "card_type": "Sahibinden Mağaza",
-    "group_id": "G-DEMO",
+  "1122-010": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
     "data": {
-      "title": "Mağaza",
-      "url": "https://sahibinden.com/example"
+      "title": "hgjuc",
+      "url": "google.com"
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.465256"
+    "created_at": "2026-11-27T02:33:31.385488"
+  },
+  "1122-009": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:28.735691"
+  },
+  "1122-008": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:26.365863"
+  },
+  "1122-007": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:23.726990"
+  },
+  "1122-006": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:20.787452"
+  },
+  "1122-005": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:15.675908"
+  },
+  "1122-004": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:13.669479"
+  },
+  "1122-003": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:11.095600"
+  },
+  "1122-002": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:04.953711"
+  },
+  "1122-001": {
+    "card_type": "Özel Bağlantı",
+    "group_id": "1122",
+    "data": {
+      "title": "hgjuc",
+      "url": "google.com"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:33:00.265363"
+  },
+  "K023123009": {
+    "card_type": "Çoklu IBAN Kartı",
+    "group_id": null,
+    "data": {
+      "title": "Banka Hesaplarım",
+      "owner": "",
+      "accounts": [
+        {
+          "bank_name": "Garanti BBVA",
+          "bank_color": "#009B4E",
+          "account_title": "mevlüt karabaş",
+          "recipient": "cbdf",
+          "iban": "1234567876543212345678876543223456"
+        },
+        {
+          "bank_name": "QNB",
+          "bank_color": "#5D2E8C",
+          "account_title": "ghxyhy",
+          "recipient": "hyjytjy",
+          "iban": "23456543456765433456788765"
+        }
+      ]
+    },
+    "locked": true,
+    "created_at": "2026-11-27T02:31:26.300686"
+  },
+  "K022936008": {
+    "card_type": "Google Yorum",
+    "group_id": null,
+    "data": {
+      "title": "ffdgg",
+      "url": "https://www.google.com/search?sca_esv=2d12597602fc98d9&hl=tr&sxsrf=AKL5yDh6y46_XTV0MTIFqGxEiO1ZZKcilA%3A1795727878175&ei=BqIIa9edB92yi-gPpNTQsQE&iflsig=AHSINFcAAAAAawiwFnzcTr6NnlJ82TieqO7pq4I-VbCJ&ved=0CAEQ2_wOahcKEwiw9PfTx6aYAxUAAAAAHQAAAAAQQw&cs=1&ictx=2&gs_lp=Egdnd3Mtd2l6IgBIAFAAWABwAHgAkAEAmAEAoAEAqgEAuAEByAEAmAIAoAIAmAMAkgcAoAcAsgcAuAcAwgcAyAcAgAgB&sclient=gws-wiz&atvm=2&mstk=AUtExfA5JVCvv-5r57fKRQmn36U5fZzChFmwMezT5mymvHP7Gb7nZqeOpK4d2UlC69mO_5JjSdwzTI8wxGCA0yeI1jpt4zJASFp8O13NICG44J5OI4rzo87hJPmARQjOJruSd44f8ZR7QNfXqDCxeInm_uhOBZkRC60NjZcvHrcxYBTScnN1ZJYvVCz86ts1h-aZeh60IcN7PTGJAzRl5mF2lSUbQorRbVmpC3yKy5PL5ZtM4zkrOF86ZJRpywOaV41VGp_pceL_W6nd0E5C32zck1ifbkqFrYDVhj7cZaQG9IwOVqtu8G6zyRID7D7kryYawZZkJh6Zas7iBjxVXvXJCvqwXEHFW1f2XfBExHBzGA-2-u9HZC7HTa0&mtid=3JsIa6PEB9GM-d8PlNCVqQU&csuir=1&aep=26&q=kanka+bana+culade+code+open+code+gibi+bir+ara%C3%A7+%C3%B6ner+limizi+bitmeyecek+kadar+%C3%B6ok+olsun+dosya+olu%C5%9Fturma+yazma+silme+degi%C5%9Ftirme+web+fln+da+olsun&lns_mode=cvst&udm=50"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:29:38.423297"
+  },
+  "K022816007": {
+    "card_type": "Google Yorum",
+    "group_id": null,
+    "data": {
+      "title": "kahve dünyası",
+      "url": "https://www.google.com/search?sca_esv=2d12597602fc98d9&hl=tr&sxsrf=AKL5yDh6y46_XTV0MTIFqGxEiO1ZZKcilA%3A1795727878175&ei=BqIIa9edB92yi-gPpNTQsQE&iflsig=AHSINFcAAAAAawiwFnzcTr6NnlJ82TieqO7pq4I-VbCJ&ved=0CAEQ2_wOahcKEwiw9PfTx6aYAxUAAAAAHQAAAAAQQw&cs=1&ictx=2&gs_lp=Egdnd3Mtd2l6IgBIAFAAWABwAHgAkAEAmAEAoAEAqgEAuAEByAEAmAIAoAIAmAMAkgcAoAcAsgcAuAcAwgcAyAcAgAgB&sclient=gws-wiz&atvm=2&mstk=AUtExfA5JVCvv-5r57fKRQmn36U5fZzChFmwMezT5mymvHP7Gb7nZqeOpK4d2UlC69mO_5JjSdwzTI8wxGCA0yeI1jpt4zJASFp8O13NICG44J5OI4rzo87hJPmARQjOJruSd44f8ZR7QNfXqDCxeInm_uhOBZkRC60NjZcvHrcxYBTScnN1ZJYvVCz86ts1h-aZeh60IcN7PTGJAzRl5mF2lSUbQorRbVmpC3yKy5PL5ZtM4zkrOF86ZJRpywOaV41VGp_pceL_W6nd0E5C32zck1ifbkqFrYDVhj7cZaQG9IwOVqtu8G6zyRID7D7kryYawZZkJh6Zas7iBjxVXvXJCvqwXEHFW1f2XfBExHBzGA-2-u9HZC7HTa0&mtid=3JsIa6PEB9GM-d8PlNCVqQU&csuir=1&aep=26&q=kanka+bana+culade+code+open+code+gibi+bir+ara%C3%A7+%C3%B6ner+limizi+bitmeyecek+kadar+%C3%B6ok+olsun+dosya+olu%C5%9Fturma+yazma+silme+degi%C5%9Ftirme+web+fln+da+olsun&lns_mode=cvst&udm=50"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T02:28:18.596738"
   },
   "DEMO-IBAN": {
     "card_type": "Çoklu IBAN Kartı",
@@ -61,7 +197,7 @@
       ]
     },
     "locked": false,
-    "created_at": "2026-11-27T02:16:08.856298"
+    "created_at": "2026-11-27T02:26:39.786522"
   },
   "DEMO-MENU": {
     "card_type": "Dijital Menü",
@@ -71,7 +207,7 @@
       "url": "https://example.com/menu"
     },
     "locked": false,
-    "created_at": "2026-11-27T02:16:08.856298"
+    "created_at": "2026-11-27T02:26:39.786522"
   },
   "DEMO-GOOGLE": {
     "card_type": "Google Yorum",
@@ -81,7 +217,7 @@
       "url": "https://g.page/r/SENIN_GERCEK_GOOGLE_LINKIN/review"
     },
     "locked": false,
-    "created_at": "2026-11-27T02:16:08.856298"
+    "created_at": "2026-11-27T02:26:39.786522"
   },
   "DEMO-INSTA": {
     "card_type": "Instagram",
@@ -91,7 +227,7 @@
       "url": "https://instagram.com/kahvedukkani"
     },
     "locked": false,
-    "created_at": "2026-11-27T02:16:08.856298"
+    "created_at": "2026-11-27T02:26:39.786522"
   },
   "DEMO-WA": {
     "card_type": "WhatsApp",
@@ -102,6 +238,16 @@
       "url": "https://wa.me/905551234567"
     },
     "locked": false,
-    "created_at": "2026-11-27T02:16:08.856298"
+    "created_at": "2026-11-27T02:26:39.786522"
+  },
+  "DEMO-SAHIB": {
+    "card_type": "Sahibinden Mağaza",
+    "group_id": "G-DEMO",
+    "data": {
+      "title": "Mağaza",
+      "url": "https://sahibinden.com/example"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T01:52:08.465256"
   }
 }

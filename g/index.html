@@ -45,25 +45,36 @@ body {
 }
 .container {
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 .header {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   animation: fadeInDown 0.5s ease-out;
 }
 .header h1 {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.5px;
+}
+.owner-badge {
+  display: inline-block;
+  margin-top: 8px;
+  background: var(--btn-bg);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
 }
 .header p {
   color: var(--text-muted);
   font-size: 14px;
-  margin-top: 4px;
+  margin-top: 12px;
 }
 .account-card {
   background: var(--card-bg);
@@ -88,25 +99,26 @@ body {
   gap: 14px;
 }
 .logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 11px;
+  font-weight: 800;
+  font-size: 12px;
   color: #fff;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   flex-shrink: 0;
+  letter-spacing: -0.5px;
 }
 .bank-info {
   flex: 1;
 }
 .bank-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 .account-title {
@@ -115,14 +127,14 @@ body {
   display: inline-flex;
   align-items: center;
   background: rgba(150, 150, 150, 0.15);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 600;
 }
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .data-row {
   display: flex;
@@ -130,12 +142,12 @@ body {
   align-items: center;
   background: var(--bg-color);
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   transition: border-color 0.2s;
 }
 .data-row:hover {
-  border-color: rgba(150, 150, 150, 0.3);
+  border-color: rgba(150, 150, 150, 0.4);
 }
 .data-content {
   display: flex;
@@ -148,11 +160,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 .data-value {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -169,7 +181,7 @@ body {
   color: #fff;
   border: none;
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -192,8 +204,8 @@ body {
   pointer-events: none;
 }
 .btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 .msg {
   text-align: center;
@@ -247,17 +259,42 @@ body {
     else { show('Kart verisi eksik veya geçersiz.', 'error'); }
   }
 
+  // TÜM BANKA LOGOLARI VE RENKLERİ HARİTASI
+  var BANKS = {
+    'Akbank': { short: 'Akbank', color: '#E30613' },
+    'Garanti BBVA': { short: 'Garanti', color: '#009B4E' },
+    'Ziraat Bankası': { short: 'Ziraat', color: '#E30613' },
+    'İş Bankası': { short: 'İş', color: '#004B93' },
+    'Yapı Kredi': { short: 'Yapı Kredi', color: '#002B5C' },
+    'QNB': { short: 'QNB', color: '#5D2E8C' },
+    'VakıfBank': { short: 'Vakıf', color: '#FEC50C' },
+    'Halkbank': { short: 'Halk', color: '#004A99' },
+    'Enpara': { short: 'Enpara', color: '#00A0E3' },
+    'Kuveyt Türk': { short: 'Kuveyt', color: '#00A651' },
+    'Diğer': { short: 'Banka', color: '#666666' }
+  };
+
   function showIbans(d){
     var title = d.title || 'Banka Hesaplarım';
+    var owner = d.owner || ''; // Kart Sahibi bilgisi
     var accounts = d.accounts || [];
     
-    var html = '<div class="header"><h1>' + esc(title) + '</h1><p>Kopyalamak için butonları kullanabilirsiniz</p></div>';
+    var html = '<div class="header">' +
+      '<h1>' + esc(title) + '</h1>' +
+      (owner ? '<div class="owner-badge">Kart Sahibi: ' + esc(owner) + '</div>' : '') +
+      '<p>Kopyalamak için butonları kullanabilirsiniz</p></div>';
     
     accounts.forEach(function(a, index){
       var delay = index * 0.1;
+      
+      // Banka logolarını ve renklerini JS'ten otomatik ata
+      var b = BANKS[a.bank_name] || BANKS['Diğer'];
+      var logoColor = a.bank_color && a.bank_color !== '#666666' ? a.bank_color : b.color;
+      var shortName = b.short;
+      
       html += '<div class="account-card" style="animation-delay: ' + delay + 's">' +
         '<div class="card-top">' +
-          '<div class="logo" style="background:' + esc(a.bank_color || '#666') + '">' + esc(a.bank_name || '') + '</div>' +
+          '<div class="logo" style="background:' + esc(logoColor) + '">' + esc(shortName) + '</div>' +
           '<div class="bank-info">' +
             '<div class="bank-name">' + esc(a.bank_name || '') + '</div>' +
             (a.account_title ? '<div class="account-title">' + esc(a.account_title) + '</div>' : '') +

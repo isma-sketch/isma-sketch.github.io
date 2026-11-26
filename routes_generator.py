@@ -5,7 +5,7 @@ def generate_routes(output='routes.json'):
     init_db()
     routes = {}
     for row in get_all_cards():
-        card_id, card_type, group_id, data, locked, created_at = row
+        card_id, card_type, group_id, data, locked, created_at, uid = row
         routes[card_id] = {
             'card_type': card_type,
             'group_id': group_id,

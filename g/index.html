@@ -3,230 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Banka Hesaplarım</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Yönlendirici</title>
 <style>
-:root {
-  --bg-color: #f3f4f6;
-  --card-bg: rgba(255, 255, 255, 0.85);
-  --text-main: #111827;
-  --text-muted: #6b7280;
-  --border-color: rgba(0, 0, 0, 0.05);
-  --btn-bg: #2563eb;
-  --btn-hover: #1d4ed8;
-  --btn-success: #10b981;
-  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --btn-bg: #3b82f6;
-    --btn-hover: #2563eb;
-    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  }
-}
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
-  transition: background-color 0.3s, color 0.3s;
-}
-.container {
-  width: 100%;
-  max-width: 520px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.header {
-  text-align: center;
-  margin-bottom: 20px;
-  animation: fadeInDown 0.5s ease-out;
-}
-.header h1 {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-.owner-badge {
-  display: inline-block;
-  margin-top: 8px;
-  background: var(--btn-bg);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-}
-.header p {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin-top: 12px;
-}
-.account-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: fadeInUp 0.5s ease-out backwards;
-  transition: transform 0.2s;
-}
-.account-card:hover {
-  transform: translateY(-2px);
-}
-.card-top {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 12px;
-  color: #fff;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  flex-shrink: 0;
-  letter-spacing: -0.5px;
-}
-.bank-info {
-  flex: 1;
-}
-.bank-name {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.account-title {
-  font-size: 12px;
-  color: var(--text-muted);
-  display: inline-flex;
-  align-items: center;
-  background: rgba(150, 150, 150, 0.15);
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-.card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.data-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-color);
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-  transition: border-color 0.2s;
-}
-.data-row:hover {
-  border-color: rgba(150, 150, 150, 0.4);
-}
-.data-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
-}
-.data-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-.data-value {
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.iban-value {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 15px;
-  letter-spacing: 0.5px;
-  word-break: break-all;
-  font-weight: 700;
-}
-.btn {
-  background: var(--btn-bg);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  font-family: inherit;
-}
-.btn:hover {
-  background: var(--btn-hover);
-  transform: scale(1.02);
-}
-.btn:active {
-  transform: scale(0.95);
-}
-.btn.success {
-  background: var(--btn-success);
-  pointer-events: none;
-}
-.btn svg {
-  width: 16px;
-  height: 16px;
-}
-.msg {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-muted);
-  font-size: 15px;
-  animation: fadeIn 0.3s;
-}
-.error { color: #ef4444; }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+:root { --bg: #f3f4f6; --card: #fff; --text: #111827; --muted: #6b7280; --primary: #2563eb; --success: #10b981; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --primary: #3b82f6; } }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
+.container { width: 100%; max-width: 500px; }
+.card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 16px; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+.logo { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 11px; text-align: center; }
+.info { flex: 1; margin-left: 15px; }
+.bank { font-weight: 700; font-size: 16px; }
+.acc { font-size: 12px; color: var(--muted); }
+.iban { font-family: monospace; font-size: 14px; margin-top: 4px; }
+.btn { background: var(--primary); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
+.btn.ok { background: var(--success); }
+.msg { text-align: center; padding: 40px; color: var(--muted); }
+.err { color: #ef4444; }
 </style>
 </head>
 <body>
@@ -236,128 +29,49 @@ body {
   var app = document.getElementById('app');
   var params = new URLSearchParams(window.location.search);
   var id = params.get('id');
-  if(!id){ show('Kart ID parametresi bulunamadı.', 'error'); return; }
-
+  if(!id){ app.innerHTML = '<div class="msg err">Kart ID bulunamadı (?id=...)</div>'; return; }
+  
   var base = window.location.pathname.replace(/\/g\/.*$/, '');
   fetch(base + '/routes.json?v=' + Date.now())
-    .then(function(r){ if(!r.ok) throw new Error('routes.json yüklenemedi (' + r.status + ')'); return r.json(); })
-    .then(function(data){ route(data); })
-    .catch(function(e){ show('Hata: ' + e.message, 'error'); });
-
-  function show(m, cls){ app.innerHTML = '<div class="msg ' + (cls||'') + '">' + m + '</div>'; }
-
-  function route(data){
-    var card = data[id];
-    if(!card){ show('Bu kart sistemde kayıtlı değil.', 'error'); return; }
-    var t = card.card_type, d = card.data || {};
-    if(t === 'Çoklu IBAN Kartı'){ showIbans(d); return; }
-    var url = null;
-    if(t === 'Instagram'){ url = d.url || (d.username ? 'https://instagram.com/' + d.username : null); }
-    else if(t === 'WhatsApp'){ url = d.url || (d.phone ? 'https://wa.me/' + d.phone.replace(/\D/g, '') : null); }
-    else { url = d.url; }
-    if(url){ window.location.replace(url); }
-    else { show('Kart verisi eksik veya geçersiz.', 'error'); }
-  }
-
-  // TÜM BANKA LOGOLARI VE RENKLERİ HARİTASI
-  var BANKS = {
-    'Akbank': { short: 'Akbank', color: '#E30613' },
-    'Garanti BBVA': { short: 'Garanti', color: '#009B4E' },
-    'Ziraat Bankası': { short: 'Ziraat', color: '#E30613' },
-    'İş Bankası': { short: 'İş', color: '#004B93' },
-    'Yapı Kredi': { short: 'Yapı Kredi', color: '#002B5C' },
-    'QNB': { short: 'QNB', color: '#5D2E8C' },
-    'VakıfBank': { short: 'Vakıf', color: '#FEC50C' },
-    'Halkbank': { short: 'Halk', color: '#004A99' },
-    'Enpara': { short: 'Enpara', color: '#00A0E3' },
-    'Kuveyt Türk': { short: 'Kuveyt', color: '#00A651' },
-    'Diğer': { short: 'Banka', color: '#666666' }
-  };
+    .then(function(r){ if(!r.ok) throw new Error('routes.json yüklenemedi'); return r.json(); })
+    .then(function(data){
+      var card = data[id];
+      if(!card){ app.innerHTML = '<div class="msg err">Bu kart sistemde kayıtlı değil. ID: ' + id + '</div>'; return; }
+      var d = card.data || {};
+      if(card.card_type === 'Çoklu IBAN Kartı'){ showIbans(d); return; }
+      var url = d.url || (d.username ? 'https://instagram.com/'+d.username : (d.phone ? 'https://wa.me/'+d.phone : null));
+      if(url){ window.location.replace(url); } else { app.innerHTML = '<div class="msg err">Geçersiz link.</div>'; }
+    }).catch(function(e){ app.innerHTML = '<div class="msg err">Hata: ' + e.message + '</div>'; });
 
   function showIbans(d){
-    var title = d.title || 'Banka Hesaplarım';
-    var owner = d.owner || ''; // Kart Sahibi bilgisi
-    var accounts = d.accounts || [];
+    var html = '<div class="card"><h2 style="text-align:center;">' + esc(d.title || 'Banka Hesaplarım') + '</h2>';
+    if(d.owner) html += '<div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:15px;">Sahibi: ' + esc(d.owner) + '</div>';
     
-    var html = '<div class="header">' +
-      '<h1>' + esc(title) + '</h1>' +
-      (owner ? '<div class="owner-badge">Kart Sahibi: ' + esc(owner) + '</div>' : '') +
-      '<p>Kopyalamak için butonları kullanabilirsiniz</p></div>';
-    
-    accounts.forEach(function(a, index){
-      var delay = index * 0.1;
-      
-      // Banka logolarını ve renklerini JS'ten otomatik ata
-      var b = BANKS[a.bank_name] || BANKS['Diğer'];
-      var logoColor = a.bank_color && a.bank_color !== '#666666' ? a.bank_color : b.color;
-      var shortName = b.short;
-      
-      html += '<div class="account-card" style="animation-delay: ' + delay + 's">' +
-        '<div class="card-top">' +
-          '<div class="logo" style="background:' + esc(logoColor) + '">' + esc(shortName) + '</div>' +
-          '<div class="bank-info">' +
-            '<div class="bank-name">' + esc(a.bank_name || '') + '</div>' +
-            (a.account_title ? '<div class="account-title">' + esc(a.account_title) + '</div>' : '') +
-          '</div>' +
+    (d.accounts || []).forEach(function(a){
+      html += '<div class="row">' +
+        '<div class="logo" style="background:' + esc(a.bank_color || '#666') + '">' + esc(a.bank_name) + '</div>' +
+        '<div class="info">' +
+          '<div class="bank">' + esc(a.bank_name) + '</div>' +
+          (a.account_title ? '<div class="acc">' + esc(a.account_title) + '</div>' : '') +
+          (a.recipient ? '<div class="acc">Alıcı: ' + esc(a.recipient) + '</div>' : '') +
+          '<div class="iban">' + esc(a.iban) + '</div>' +
         '</div>' +
-        '<div class="card-body">';
-        
-      if(a.recipient) {
-        html += '<div class="data-row">' +
-          '<div class="data-content">' +
-            '<span class="data-label">Alıcı Adı</span>' +
-            '<span class="data-value">' + esc(a.recipient) + '</span>' +
-          '</div>' +
-          '<button class="btn" data-copy="' + escAttr(a.recipient) + '">' + getCopySvg() + ' Kopyala</button>' +
-        '</div>';
-      }
-      
-      html += '<div class="data-row">' +
-          '<div class="data-content">' +
-            '<span class="data-label">IBAN</span>' +
-            '<span class="data-value iban-value">' + esc(a.iban || '') + '</span>' +
-          '</div>' +
-          '<button class="btn" data-copy="' + escAttr(a.iban) + '">' + getCopySvg() + ' Kopyala</button>' +
-        '</div>' +
-        '</div>' +
+        '<button class="btn" onclick="copyText(\'' + escAttr(a.iban) + '\', this)">Kopyala</button>' +
       '</div>';
     });
-    
+    html += '</div>';
     app.innerHTML = html;
-    
-    app.querySelectorAll('button[data-copy]').forEach(function(b){
-      b.addEventListener('click', function(){ copyText(b.getAttribute('data-copy'), b); });
+  }
+  
+  window.copyText = function(t, btn) {
+    var old = btn.innerHTML;
+    navigator.clipboard.writeText(t).then(function(){ 
+      btn.innerHTML = 'Kopyalandı ✓'; btn.classList.add('ok');
+      setTimeout(function(){ btn.innerHTML = old; btn.classList.remove('ok'); }, 1500);
     });
-  }
-  
-  function getCopySvg() {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-  }
-
-  function esc(s){ if(s == null) return ''; return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
-  function escAttr(s){ return String(s || '').replace(/"/g, '&quot;'); }
-  
-  function copyText(t, btn){
-    var done = function(){ 
-      var orig = btn.innerHTML;
-      btn.innerHTML = 'Kopyalandı ✓'; 
-      btn.classList.add('success'); 
-      setTimeout(function(){ 
-        btn.innerHTML = orig; 
-        btn.classList.remove('success'); 
-      }, 2000); 
-    };
-    
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(t).then(done).catch(function(){ fallback(t, done); });
-    } else { fallback(t, done); }
-  }
-  
-  function fallback(t, cb){
-    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); cb(); } catch(e){}
-    document.body.removeChild(ta);
-  }
+  };
+  function esc(s){ return String(s||'').replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function escAttr(s){ return String(s||'').replace(/'/g, "\\'"); }
 })();
 </script>
 </body>

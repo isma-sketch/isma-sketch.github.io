@@ -3,191 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Müşteri Paneli - Kart Yönetimi</title>
+<title>Müşteri Paneli</title>
 <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    h1 { font-size: 24px; margin-top: 0; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
-    input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
-    button { background: #007bff; color: #fff; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 15px; transition: 0.2s; }
-    button:hover { background: #0056b3; }
-    .btn-success { background: #28a745; } .btn-success:hover { background: #218838; }
-    .btn-danger { background: #dc3545; padding: 8px 12px; font-size: 12px; } .btn-danger:hover { background: #c82333; }
-    .iban-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-    .iban-row > div { flex: 1; }
-    .preview-box { background: #e9ecef; padding: 20px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; font-size: 13px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; }
-    .actions { margin-top: 25px; display: flex; gap: 10px; }
-    .note { font-size: 13px; color: #666; margin-top: 10px; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+.container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.form-group { margin-bottom: 15px; } label { font-weight: bold; display: block; margin-bottom: 5px; }
+input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+button { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+.btn-danger { background: #dc3545; } .btn-success { background: #28a745; }
+.iban-row { display: flex; gap: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #eee; }
+.iban-row > div { flex: 1; } .preview { background: #eee; padding: 15px; border-radius: 5px; font-family: monospace; margin-top: 20px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
 <div class="container">
-    <h1>Müşteri Kart Güncelleme Paneli</h1>
-    <p id="status" style="color: #007bff; font-weight: bold; display: none;">Yükleniyor...</p>
-    
-    <div id="cardForm" style="display: none;">
-        <div class="form-group">
-            <label>Kart Başlığı / İşletme Adı</label>
-            <input type="text" id="cardTitle">
-        </div>
-        <div class="form-group">
-            <label>Kart Sahibi</label>
-            <input type="text" id="cardOwner">
-        </div>
-        
-        <div id="singleLinkArea" style="display:none;">
-            <div class="form-group">
-                <label>Hedef Bağlantı (URL veya Kullanıcı Adı)</label>
-                <input type="text" id="targetUrl">
-            </div>
-        </div>
-
-        <div id="ibanArea" style="display:none;">
-            <label style="margin-top: 15px;">Banka Hesapları (IBAN)</label>
-            <div id="ibanList"></div>
-            <button type="button" onclick="addIbanRow()" style="background:#17a2b8; margin-bottom: 15px;">+ Yeni IBAN Ekle</button>
-        </div>
-
-        <div class="actions">
-            <button class="btn-success" onclick="saveData()">Değişiklikleri Kaydet ve JSON İndir</button>
-        </div>
-        <p class="note">Not: Değişikliklerin yayına alınması için indirdiğiniz JSON dosyasını yöneticiye iletmeniz gerekmektedir.</p>
-        
-        <h3>Canlı Önizleme (Yeni JSON)</h3>
-        <div id="previewBox" class="preview-box"></div>
+  <h2>Müşteri Kartı Düzenle</h2>
+  <p id="status" style="color: blue;">Yükleniyor...</p>
+  <div id="formArea" style="display:none;">
+    <div class="form-group"><label>Kart Başlığı</label><input id="cardTitle"></div>
+    <div class="form-group"><label>Kart Sahibi</label><input id="cardOwner"></div>
+    <div id="linkArea" style="display:none;"><div class="form-group"><label>Hedef Link</label><input id="targetUrl"></div></div>
+    <div id="ibanArea" style="display:none;">
+      <label>Banka Hesapları</label>
+      <div id="ibanList"></div>
+      <button type="button" onclick="addIbanRow()" style="background:#17a2b8; margin-bottom:15px;">+ IBAN Ekle</button>
     </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-success" onclick="saveJson()">JSON İndir</button>
+    </div>
+    <div class="preview" id="previewBox"></div>
+  </div>
 </div>
-
 <script>
-    const BANKS = ['Akbank', 'Garanti BBVA', 'Ziraat Bankası', 'İş Bankası', 'Yapı Kredi', 'QNB', 'VakıfBank', 'Halkbank', 'Enpara', 'Kuveyt Türk', 'Diğer'];
-    const BANK_COLORS = {
-        'Akbank': '#E30613', 'Garanti BBVA': '#009B4E', 'Ziraat Bankası': '#E30613', 'İş Bankası': '#004B93',
-        'Yapı Kredi': '#002B5C', 'QNB': '#5D2E8C', 'VakıfBank': '#FEC50C', 'Halkbank': '#004A99',
-        'Enpara': '#00A0E3', 'Kuveyt Türk': '#00A651', 'Diğer': '#666666'
-    };
-    
-    let currentCardData = null;
-    let currentCardId = null;
-    let isIban = false;
+var BANKS = ['Akbank','Garanti BBVA','Ziraat Bankası','İş Bankası','Yapı Kredi','QNB','VakıfBank','Halkbank','Enpara','Kuveyt Türk','Diğer'];
+var BCOLORS = {'Akbank':'#E30613','Garanti BBVA':'#009B4E','Ziraat Bankası':'#E30613','İş Bankası':'#004B93','Yapı Kredi':'#002B5C','QNB':'#5D2E8C','VakıfBank':'#FEC50C','Halkbank':'#004A99','Enpara':'#00A0E3','Kuveyt Türk':'#00A651','Diğer':'#666'};
+var isIban = false, cId = '', oldData = null;
 
-    window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        currentCardId = params.get('id');
-        if(!currentCardId) {
-            document.getElementById('status').innerText = 'Hata: Kart ID bulunamadı (?id=...).';
-            return;
-        }
-
-        fetch('routes.json?v=' + Date.now())
-            .then(r => r.json())
-            .then(data => {
-                if(!data[currentCardId]) {
-                    document.getElementById('status').innerText = 'Hata: Bu ID ile kayıtlı kart bulunamadı.';
-                    return;
-                }
-                currentCardData = data[currentCardId].data;
-                isIban = (data[currentCardId].card_type === 'Çoklu IBAN Kartı');
-                
-                document.getElementById('status').style.display = 'none';
-                document.getElementById('cardForm').style.display = 'block';
-                
-                document.getElementById('cardTitle').value = currentCardData.title || '';
-                document.getElementById('cardOwner').value = currentCardData.owner || '';
-                
-                if(isIban) {
-                    document.getElementById('ibanArea').style.display = 'block';
-                    renderIbanList(currentCardData.accounts || []);
-                } else {
-                    document.getElementById('singleLinkArea').style.display = 'block';
-                    document.getElementById('targetUrl').value = currentCardData.url || currentCardData.username || currentCardData.phone || '';
-                }
-                updatePreview();
-            })
-            .catch(e => {
-                document.getElementById('status').innerText = 'JSON yüklenirken hata oluştu. Lütfen sayfayı yenileyin.';
-            });
-    };
-
-    function renderIbanList(accounts) {
-        const list = document.getElementById('ibanList');
-        list.innerHTML = '';
-        if(accounts.length === 0) addIbanRow();
-        else accounts.forEach(acc => addIbanRow(acc));
+window.onload = function(){
+  var params = new URLSearchParams(window.location.search);
+  cId = params.get('id');
+  if(!cId){ document.getElementById('status').innerText = 'Hata: ID yok.'; return; }
+  fetch('routes.json?v='+Date.now()).then(r=>r.json()).then(data=>{
+    if(!data[cId]) { document.getElementById('status').innerText = 'Hata: Kart bulunamadı.'; return; }
+    oldData = data[cId].data;
+    isIban = (data[cId].card_type === 'Çoklu IBAN Kartı');
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('formArea').style.display = 'block';
+    document.getElementById('cardTitle').value = oldData.title || '';
+    document.getElementById('cardOwner').value = oldData.owner || '';
+    if(isIban){
+      document.getElementById('ibanArea').style.display = 'block';
+      (oldData.accounts||[]).forEach(addIbanRow);
+      if(!oldData.accounts || oldData.accounts.length === 0) addIbanRow();
+    } else {
+      document.getElementById('linkArea').style.display = 'block';
+      document.getElementById('targetUrl').value = oldData.url || oldData.username || oldData.phone || '';
     }
+    updatePreview();
+  });
+};
 
-    function addIbanRow(data = null) {
-        const list = document.getElementById('ibanList');
-        const div = document.createElement('div');
-        div.className = 'iban-row';
-        
-        let bankOptions = BANKS.map(b => `<option value="${b}" ${data && data.bank_name === b ? 'selected' : ''}>${b}</option>`).join('');
-        
-        div.innerHTML = `
-            <div style="flex: 1.5;"><label>Banka</label><select class="iban-bank">${bankOptions}</select></div>
-            <div style="flex: 1.5;"><label>Hesap Adı (İsteğe Bağlı)</label><input type="text" class="iban-title" value="${data && data.account_title ? data.account_title : ''}"></div>
-            <div style="flex: 2;"><label>Alıcı Adı Soyadı</label><input type="text" class="iban-name" value="${data && data.recipient ? data.recipient : ''}"></div>
-            <div style="flex: 3;"><label>IBAN</label><input type="text" class="iban-no" value="${data && data.iban ? data.iban : ''}" placeholder="TR00 0000..."></div>
-            <button class="btn-danger" onclick="this.parentElement.remove(); updatePreview();">Sil</button>
-        `;
-        
-        div.querySelectorAll('input, select').forEach(el => el.addEventListener('input', updatePreview));
-        list.appendChild(div);
-    }
+function addIbanRow(data) {
+  data = data || {};
+  var div = document.createElement('div');
+  div.className = 'iban-row';
+  var opts = BANKS.map(b=>`<option value="${b}" ${data.bank_name===b?'selected':''}>${b}</option>`).join('');
+  div.innerHTML = `
+    <div><label>Banka</label><select class="b-name">${opts}</select></div>
+    <div><label>Etiket</label><input class="b-title" value="${data.account_title||''}"></div>
+    <div><label>Alıcı</label><input class="b-recipient" value="${data.recipient||''}"></div>
+    <div><label>IBAN</label><input class="b-iban" value="${data.iban||''}"></div>
+    <button class="btn-danger" onclick="this.parentElement.remove();updatePreview()">X</button>
+  `;
+  div.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', updatePreview));
+  document.getElementById('ibanList').appendChild(div);
+}
 
-    function buildJsonData() {
-        let newData = {
-            title: document.getElementById('cardTitle').value,
-            owner: document.getElementById('cardOwner').value
-        };
+function buildJson(){
+  var res = { title: document.getElementById('cardTitle').value, owner: document.getElementById('cardOwner').value };
+  if(isIban){
+    res.accounts = [];
+    document.querySelectorAll('.iban-row').forEach(r=>{
+      var iban = r.querySelector('.b-iban').value.trim();
+      if(iban) {
+        var bank = r.querySelector('.b-name').value;
+        res.accounts.push({ bank_name: bank, bank_color: BCOLORS[bank]||'#666', account_title: r.querySelector('.b-title').value, recipient: r.querySelector('.b-recipient').value, iban: iban });
+      }
+    });
+  } else {
+    var v = document.getElementById('targetUrl').value;
+    if(oldData.url !== undefined) res.url = v;
+    else if(oldData.username !== undefined) res.username = v;
+    else if(oldData.phone !== undefined) res.phone = v;
+  }
+  return res;
+}
 
-        if(isIban) {
-            newData.accounts = [];
-            document.querySelectorAll('.iban-row').forEach(row => {
-                const bank = row.querySelector('.iban-bank').value;
-                const iban = row.querySelector('.iban-no').value.trim();
-                if(iban) {
-                    newData.accounts.push({
-                        bank_name: bank,
-                        bank_color: BANK_COLORS[bank] || '#666',
-                        account_title: row.querySelector('.iban-title').value,
-                        recipient: row.querySelector('.iban-name').value,
-                        iban: iban
-                    });
-                }
-            });
-        } else {
-            const urlVal = document.getElementById('targetUrl').value;
-            if(currentCardData.url !== undefined) newData.url = urlVal;
-            else if(currentCardData.username !== undefined) newData.username = urlVal;
-            else if(currentCardData.phone !== undefined) newData.phone = urlVal;
-        }
-        return newData;
-    }
+function updatePreview(){
+  document.getElementById('previewBox').innerText = JSON.stringify(buildJson(), null, 2);
+}
 
-    function updatePreview() {
-        const newData = buildJsonData();
-        const previewBox = document.getElementById('previewBox');
-        previewBox.innerText = JSON.stringify(newData, null, 2);
-    }
-
-    function saveData() {
-        const newData = buildJsonData();
-        // Sadece değişen datayı indir
-        const exportObj = {};
-        exportObj[currentCardId] = { data: newData };
-        
-        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `guncelleme_${currentCardId}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+function saveJson(){
+  var out = {}; out[cId] = { data: buildJson() };
+  var blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'guncelleme_'+cId+'.json'; a.click();
+}
 </script>
 </body>
 </html>

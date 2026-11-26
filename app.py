@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import threading, winsound, os, webbrowser, json
+import threading, winsound, os, webbrowser, json, sqlite3
 from database import (init_db, get_setting, set_setting, find_by_uid,
                       insert_card, get_next_card_id, get_all_cards,
                       update_card_data, update_group_data, delete_card)
@@ -10,7 +10,7 @@ from nfc_writer import NFCWriter, CHIP_SIZES
 CARD_TYPES = ['Çoklu IBAN Kartı', 'Dijital Menü', 'Google Yorum', 'Instagram', 'WhatsApp', 'Sahibinden Mağaza', 'Özel Bağlantı']
 BANKS = ['Akbank', 'Garanti BBVA', 'Ziraat Bankası', 'İş Bankası', 'Yapı Kredi', 'QNB', 'VakıfBank', 'Halkbank', 'Enpara', 'Kuveyt Türk', 'Diğer']
 BANK_COLORS = {'Akbank': '#E30613', 'Garanti BBVA': '#009B4E', 'Ziraat Bankası': '#E30613', 'İş Bankası': '#004B93', 'Yapı Kredi': '#002B5C', 'QNB': '#5D2E8C', 'VakıfBank': '#FEC50C', 'Halkbank': '#004A99', 'Enpara': '#00A0E3', 'Kuveyt Türk': '#00A651', 'Diğer': '#666666'}
-READER_MODES = ['Simülasyon / Test Modu', 'PN532 (UART/HSU)', 'ACS ACR122U (PC/SC)']
+READER_MODES = ['PN532 (UART/HSU)', 'ACS ACR122U (PC/SC)']
 
 def _now():
     from datetime import datetime
@@ -19,17 +19,15 @@ def _now():
 class NFCApp:
     def __init__(self, root):
         self.root = root
-        self.root.title('NFC Yönetim Paneli v2.0')
+        self.root.title('NFC Yönetim Paneli (Donanım Modu)')
         self.root.geometry('1100x750')
-        self.writer = NFCWriter(mode='simulation')
+        self.writer = NFCWriter()
         
-        # Yazma Modu Değişkenleri
         self.iban_rows = []
         self.single_fields = {}
         self.total_count = tk.IntVar(value=5)
         self.current_index = tk.IntVar(value=0)
         self.group_id_var = tk.StringVar()
-        self.last_uid = None
         self.card_owner_var = tk.StringVar()
 
         init_db()
@@ -39,7 +37,7 @@ class NFCApp:
 
     def setup_defaults(self):
         if not get_setting('gate_url'): set_setting('gate_url', 'https://isma-sketch.github.io/g/?id=')
-        if not get_setting('reader_mode'): set_setting('reader_mode', 'Simülasyon / Test Modu')
+        if not get_setting('reader_mode'): set_setting('reader_mode', READER_MODES[0])
         if not get_setting('chip_type'): set_setting('chip_type', 'Otomatik Algıla (Önerilen)')
         if not get_setting('lock_card'): set_setting('lock_card', '0')
 
@@ -50,15 +48,14 @@ class NFCApp:
         self.tab_write = ttk.Frame(self.notebook, padding=10)
         self.tab_manage = ttk.Frame(self.notebook, padding=10)
         
-        self.notebook.add(self.tab_write, text=' Kart Yazma & Gruplama ')
-        self.notebook.add(self.tab_manage, text=' Kayıt Yönetimi & Düzenleme ')
+        self.notebook.add(self.tab_write, text=' Kart Yazma & Donanım ')
+        self.notebook.add(self.tab_manage, text=' Kayıtlar ve Grup Yönetimi ')
         
         self.build_write_tab()
         self.build_manage_tab()
 
     def build_write_tab(self):
-        # Üst Ayarlar
-        top = ttk.LabelFrame(self.tab_write, text="Sistem Ayarları", padding=10)
+        top = ttk.LabelFrame(self.tab_write, text="Sistem Ayarları & Donanım", padding=10)
         top.pack(fill='x', pady=5)
         
         ttk.Label(top, text='Sabit Kapı URL:').grid(row=0, column=0, sticky='w')
@@ -76,14 +73,12 @@ class NFCApp:
         self.chip_var = tk.StringVar(value=get_setting('chip_type'))
         ttk.Combobox(top, textvariable=self.chip_var, values=list(CHIP_SIZES.keys()), width=30, state='readonly').grid(row=2, column=1, sticky='w', padx=5)
         
-        # Orta Form ve Log
         mid = ttk.PanedWindow(self.tab_write, orient='horizontal')
         mid.pack(fill='both', expand=True, pady=5)
         
         form_frame = ttk.LabelFrame(mid, text="Kart İçeriği", padding=10)
         mid.add(form_frame, weight=3)
         
-        # Kart Tipi ve Grup Modu
         tf = ttk.Frame(form_frame)
         tf.pack(fill='x', pady=5)
         ttk.Label(tf, text='Kart Türü:').pack(side='left')
@@ -117,12 +112,10 @@ class NFCApp:
         self.log_text = tk.Text(log_frame, state='disabled', wrap='word', bg='#f4f4f4')
         self.log_text.pack(fill='both', expand=True)
         
-        # Alt Butonlar
         bottom = ttk.Frame(self.tab_write)
         bottom.pack(fill='x', pady=5)
         ttk.Button(bottom, text='YAZDIR -> DOĞRULA -> KİLİTLE -> KAYDET', command=self.process_card).pack(side='left', padx=5)
         ttk.Button(bottom, text='JSON Güncelle', command=self.refresh_routes).pack(side='left', padx=5)
-        ttk.Button(bottom, text='Müşteri Panelini Aç', command=lambda: webbrowser.open('file:///' + os.path.abspath('musteri.html').replace('\\', '/'))).pack(side='left', padx=5)
         
         self.on_type_change()
 
@@ -135,7 +128,6 @@ class NFCApp:
         ttk.Entry(top, textvariable=self.search_var, width=30).pack(side='left', padx=5)
         ttk.Button(top, text='Listeyi Yenile', command=self.refresh_card_list).pack(side='left', padx=5)
         
-        # Tablo
         cols = ('ID', 'Tür', 'Grup', 'UID', 'Kilitli')
         self.tree = ttk.Treeview(self.tab_manage, columns=cols, show='headings', height=15)
         for col in cols:
@@ -144,7 +136,6 @@ class NFCApp:
         self.tree.pack(fill='both', expand=True, pady=5)
         self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
         
-        # Düzenleme Alanı
         edit_frame = ttk.LabelFrame(self.tab_manage, text="Seçili Kartı Düzenle", padding=10)
         edit_frame.pack(fill='x', pady=5)
         
@@ -152,7 +143,7 @@ class NFCApp:
         self.edit_title_var = tk.StringVar()
         ttk.Entry(edit_frame, textvariable=self.edit_title_var, width=30).grid(row=0, column=1, padx=5)
         
-        ttk.Label(edit_frame, text='Hedef Link / Metin (JSON formatında):').grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Label(edit_frame, text='JSON İçerik:').grid(row=1, column=0, sticky='w', pady=5)
         self.edit_json_text = tk.Text(edit_frame, height=5, width=60)
         self.edit_json_text.grid(row=1, column=1, padx=5, pady=5)
         
@@ -161,6 +152,7 @@ class NFCApp:
         ttk.Button(btn_frame, text='Bu Kartı Güncelle', command=self.update_selected_card).pack(side='left', padx=5)
         ttk.Button(btn_frame, text='Bu GRUBU Güncelle', command=self.update_selected_group).pack(side='left', padx=5)
         ttk.Button(btn_frame, text='Kartı SİL', command=self.delete_selected_card).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text='GitHub\'a Gönder', command=self.git_push_info).pack(side='right', padx=5)
 
     def log(self, m):
         self.log_text.configure(state='normal')
@@ -202,45 +194,38 @@ class NFCApp:
             update_card_data(c_id, new_data)
             self.refresh_routes()
             self.refresh_card_list()
-            self.log(f"Kart güncellendi: {c_id}")
-            messagebox.showinfo("Başarılı", "Kart başarıyla güncellendi.")
+            messagebox.showinfo("Başarılı", "Kart güncellendi.")
         except Exception as e:
-            messagebox.showerror("Hata", f"Geçersiz JSON veya hata: {e}")
+            messagebox.showerror("Hata", f"Geçersiz JSON: {e}")
 
     def update_selected_group(self):
         sel = self.tree.selection()
-        if not sel: return messagebox.showwarning("Uyarı", "Lütfen gruptaki herhangi bir kartı seçin.")
-        item = self.tree.item(sel[0])
-        c_id = item['values'][0]
-        g_id = item['values'][2]
-        if not g_id:
-            return messagebox.showwarning("Uyarı", "Seçili kartın bir Grubu yok. Önce gruba dahil edin.")
-            
-        ans = messagebox.askyesno("Grup Güncelleme", f"'{g_id}' grubuna bağlı TÜM kartlar güncellenecek. Onaylıyor musunuz?")
-        if not ans: return
-        
+        if not sel: return
+        g_id = self.tree.item(sel[0])['values'][2]
+        if not g_id: return messagebox.showwarning("Uyarı", "Seçili kartın Grubu yok.")
+        if not messagebox.askyesno("Grup Güncelle", f"'{g_id}' grubundaki tüm kartlar güncellenecek. Onaylıyor musunuz?"): return
         try:
             new_data = json.loads(self.edit_json_text.get('1.0', 'end').strip())
             if 'title' in new_data: new_data['title'] = self.edit_title_var.get()
             count = update_group_data(g_id, new_data)
             self.refresh_routes()
             self.refresh_card_list()
-            self.log(f"Grup güncellendi: {g_id} ({count} kart etkilendi)")
             messagebox.showinfo("Başarılı", f"{count} kart güncellendi.")
         except Exception as e:
-            messagebox.showerror("Hata", f"Geçersiz JSON veya hata: {e}")
+            messagebox.showerror("Hata", f"Geçersiz JSON: {e}")
 
     def delete_selected_card(self):
         sel = self.tree.selection()
         if not sel: return
         c_id = self.tree.item(sel[0])['values'][0]
-        if messagebox.askyesno("Sil", f"{c_id} kartını silmek istediğinize emin misiniz?"):
+        if messagebox.askyesno("Sil", f"{c_id} silinsin mi?"):
             delete_card(c_id)
             self.refresh_routes()
             self.refresh_card_list()
-            self.log(f"Kart silindi: {c_id}")
 
-    # --- Yazma Sekmesi Fonksiyonları (Aynı kaldı, sadece gruplama eklendi) ---
+    def git_push_info(self):
+        messagebox.showinfo("GitHub Gönderimi", "Sistemi GitHub'a göndermek için CMD'yi açın ve şu komutları çalıştırın:\n\ngit add .\ngit commit -m \"Guncelleme\"\ngit push origin main")
+
     def on_type_change(self):
         for w in self.dynamic_frame.winfo_children():
             if w is not self.iban_container: w.destroy()
@@ -315,6 +300,8 @@ class NFCApp:
         return data, None
 
     def process_card(self):
+        if not self.writer.mode:
+            return messagebox.showerror("Hata", "Lütfen önce okuyucuya bağlanın.")
         threading.Thread(target=self._process_card_thread, daemon=True).start()
 
     def _process_card_thread(self):
@@ -336,9 +323,18 @@ class NFCApp:
             idx, total = self.current_index.get() + 1, self.total_count.get()
             if idx > total: return self.log('Grup doldu. Yeni Grup ID girin.')
 
-        self.log('Kart okutun...')
-        uid = self.writer.wait_for_card(timeout=30)
-        if not uid: return self.log('UID okunamadı.')
+        self.log('Kart okutun... (Fiziksel kart bekleniyor)')
+        
+        # Gerçek donanımdan UID okuma
+        uid = None
+        start_time = time.time()
+        while time.time() - start_time < 30:
+            uid = self.writer.wait_for_card()
+            if uid: break
+            time.sleep(0.5)
+            
+        if not uid: return self.log('HATA: Kart okunamadı veya zaman aşımı.')
+
         self.log(f'UID: {uid}')
 
         if find_by_uid(uid):
@@ -347,16 +343,20 @@ class NFCApp:
 
         target_url = gate + card_id
         self.log(f'Yazılıyor: {target_url}')
+        
+        # Gerçek Donanıma Yazma
         ok, msg = self.writer.write_ndef_url(target_url, self.chip_var.get())
         self.log(msg)
         if not ok: return
 
+        self.log('Doğrulanıyor...')
         ok, read_back = self.writer.read_ndef_url()
         if not ok or read_back != target_url:
             return self.log('HATA: Doğrulama başarısız! KİLİTLENMEDİ.')
         self.log('Doğrulama başarılı.')
 
         if self.lock_var.get():
+            self.log('Kilit vuruluyor...')
             ok, msg = self.writer.lock_card()
             self.log(msg)
             if not ok: self.log('UYARI: Kilit desteklenmiyor, atlandı.')
@@ -368,7 +368,7 @@ class NFCApp:
             self.log(f'BAŞARILI: {card_id} kaydedildi.')
             
             if not is_group:
-                self.on_type_change()
+                self.root.after(0, self.on_type_change)
                 self.log('Form sıfırlandı.')
             else:
                 self.current_index.set(idx)
@@ -378,7 +378,12 @@ class NFCApp:
             self.log(f'DB HATA: {e}')
 
     def save_gate(self):
-        set_setting('gate_url', self.gate_entry.get().strip())
+        url = self.gate_entry.get().strip()
+        import re
+        url = re.sub(r'\?id=.*$', '?id=', url)
+        self.gate_entry.delete(0, 'end')
+        self.gate_entry.insert(0, url)
+        set_setting('gate_url', url)
         set_setting('reader_mode', self.reader_var.get())
         set_setting('chip_type', self.chip_var.get())
         set_setting('lock_card', '1' if self.lock_var.get() else '0')
@@ -386,14 +391,14 @@ class NFCApp:
 
     def connect_reader(self):
         mode = self.reader_var.get()
-        if mode == 'Simülasyon / Test Modu':
-            self.writer.set_mode('simulation')
-            self.log('Simülasyon aktif.')
-        elif mode == 'PN532 (UART/HSU)':
-            port = simpledialog.askstring('COM Port', 'Port (ör. COM3):')
-            if port: self.log(self.writer.connect_pn532(port)[1])
-        elif mode == 'ACS ACR122U (PC/SC)':
-            self.log(self.writer.connect_acr122u()[1])
+        if 'PN532' in mode:
+            port = simpledialog.askstring('COM Port', 'Port girin (ör. COM3):')
+            if port:
+                ok, msg = self.writer.connect_pn532(port)
+                self.log(msg)
+        elif 'ACR122U' in mode:
+            ok, msg = self.writer.connect_acr122u()
+            self.log(msg)
 
     def refresh_routes(self):
         try:
@@ -403,6 +408,7 @@ class NFCApp:
             self.log(f'JSON HATA: {e}')
 
 if __name__ == '__main__':
+    import time
     root = tk.Tk()
     NFCApp(root)
     root.mainloop()

@@ -1,35 +1,67 @@
 {
+  "DEMO-SAHIB": {
+    "card_type": "Sahibinden Mağaza",
+    "group_id": "G-DEMO",
+    "data": {
+      "title": "Mağaza",
+      "url": "https://sahibinden.com/example"
+    },
+    "locked": false,
+    "created_at": "2026-11-27T01:52:08.465256"
+  },
   "DEMO-IBAN": {
     "card_type": "Çoklu IBAN Kartı",
     "group_id": "G-DEMO",
     "data": {
       "title": "Banka Hesaplarım",
+      "owner": "İsmail Hazar",
       "accounts": [
         {
           "bank_name": "Akbank",
           "bank_color": "#E30613",
           "account_title": "Maaş",
-          "recipient": "İsmail Yılmaz",
+          "recipient": "İsmail Hazar",
           "iban": "TR12 0004 6000 1234 5678 9012 34"
         },
         {
           "bank_name": "Garanti BBVA",
           "bank_color": "#009B4E",
           "account_title": "Ticari",
-          "recipient": "İsmail Yılmaz",
+          "recipient": "İsmail Hazar",
           "iban": "TR34 0006 2000 5678 9012 3456 78"
+        },
+        {
+          "bank_name": "Ziraat Bankası",
+          "bank_color": "#E30613",
+          "account_title": "Kredi",
+          "recipient": "İsmail Hazar",
+          "iban": "TR12 0001 0000 1234 5678 9012 34"
         },
         {
           "bank_name": "Enpara",
           "bank_color": "#00A0E3",
           "account_title": "Birikim",
-          "recipient": "İsmail Yılmaz",
+          "recipient": "İsmail Hazar",
           "iban": "TR90 0011 1000 0000 0123 4567 89"
+        },
+        {
+          "bank_name": "İş Bankası",
+          "bank_color": "#004B93",
+          "account_title": "Fatura",
+          "recipient": "İsmail Hazar",
+          "iban": "TR12 0006 4000 1234 5678 9012 34"
+        },
+        {
+          "bank_name": "Kuveyt Türk",
+          "bank_color": "#00A651",
+          "account_title": "Altın",
+          "recipient": "İsmail Hazar",
+          "iban": "TR12 0020 5000 1234 5678 9012 34"
         }
       ]
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.437380"
+    "created_at": "2026-11-27T02:16:08.856298"
   },
   "DEMO-MENU": {
     "card_type": "Dijital Menü",
@@ -39,7 +71,7 @@
       "url": "https://example.com/menu"
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.443224"
+    "created_at": "2026-11-27T02:16:08.856298"
   },
   "DEMO-GOOGLE": {
     "card_type": "Google Yorum",
@@ -49,7 +81,7 @@
       "url": "https://g.page/r/SENIN_GERCEK_GOOGLE_LINKIN/review"
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.448638"
+    "created_at": "2026-11-27T02:16:08.856298"
   },
   "DEMO-INSTA": {
     "card_type": "Instagram",
@@ -59,7 +91,7 @@
       "url": "https://instagram.com/kahvedukkani"
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.454031"
+    "created_at": "2026-11-27T02:16:08.856298"
   },
   "DEMO-WA": {
     "card_type": "WhatsApp",
@@ -70,16 +102,6 @@
       "url": "https://wa.me/905551234567"
     },
     "locked": false,
-    "created_at": "2026-11-27T01:52:08.460335"
-  },
-  "DEMO-SAHIB": {
-    "card_type": "Sahibinden Mağaza",
-    "group_id": "G-DEMO",
-    "data": {
-      "title": "Mağaza",
-      "url": "https://sahibinden.com/example"
-    },
-    "locked": false,
-    "created_at": "2026-11-27T01:52:08.465256"
+    "created_at": "2026-11-27T02:16:08.856298"
   }
 }
